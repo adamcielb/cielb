@@ -27,10 +27,11 @@ void setup() {
   
   // Initialiser le capteur d'humidité du sol
   pinMode(solPin, INPUT);
-
-  // Initialisation de la carte SD
-  Serial.print("Initialisation de la carte SD...");
-  if (!SD.begin(SD_CS_PIN)) {
+  
+  // Initialisation de la carte SD avec un booléen
+  bool carteSDPrete = SD.begin(SD_CS_PIN);
+  
+  if (!carteSDPrete) {
     Serial.println("Erreur de communication avec la carte SD !");
     lcd.clear();
     lcd.print("Erreur SD");
@@ -59,8 +60,10 @@ void loop() {
   float t = dht.readTemperature();  // Température en °C
   float h = dht.readHumidity();     // Humidité en % du DHT11
 
-  // Vérification si la lecture du DHT11 a échoué
-  if (isnan(t) || isnan(h)) {
+  // Vérification si la lecture du DHT11 a échoué avec un booléen
+  bool lectureDHTValide = !isnan(t) && !isnan(h);
+  
+  if (!lectureDHTValide) {
     Serial.println("Erreur lecture DHT11");
     lcd.clear();
     lcd.print("Erreur DHT");
@@ -95,6 +98,7 @@ void loop() {
   lcd.print(t);  // Afficher la température
 
   // Ouvrir le fichier pour y ajouter les données
+  bool ecritureFichier = false;
   File file = SD.open("data.txt", FILE_WRITE);
   if (file) {
     // Ajouter la date (temps), l'humidité du sol, la température et l'humidité DHT dans le fichier
@@ -106,6 +110,10 @@ void loop() {
     file.print(", ");
     file.println(h);            // Humidité DHT en %
     file.close();
+    ecritureFichier = true;
+  }
+
+  if (ecritureFichier) {
     Serial.println("Données enregistrées sur la carte SD.");
   } else {
     Serial.println("Erreur d'écriture dans le fichier data.txt");
@@ -113,4 +121,5 @@ void loop() {
 
   // Attendre 5 secondes avant de refaire une nouvelle lecture
   delay(5000);  // Attente de 5 secondes avant la prochaine lecture
-} 
+}
+
