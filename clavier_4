@@ -1,0 +1,91 @@
+#include <Keypad.h>
+
+const byte LIGNES = 4; // quatre lignes
+const byte COLONNES = 4; // quatre colonnes
+char touches[LIGNES][COLONNES] = {
+  {'1','2','3','F'},
+  {'4','5','6','E'},
+  {'7','8','9','D'},
+  {'A','0','B','C'}
+};
+byte brochesLignes[LIGNES] = {5, 4, 3, 2}; // connectez aux broches des lignes du clavier
+byte brochesColonnes[COLONNES] = {9, 8, 7, 6}; // connectez aux broches des colonnes du clavier
+
+Keypad clavier = Keypad(makeKeymap(touches), brochesLignes, brochesColonnes, LIGNES, COLONNES);
+
+// Définir les broches de la LED
+const int LED_VERTE_PIN = 11;
+const int LED_ROUGE_PIN = 12;
+
+// Définir le code secret
+const char CODE_SECRET[] = "1234"; // Code secret à 4 chiffres
+char sequenceEntree[5]; // Tableau pour stocker la séquence (4 chiffres + '\0')
+
+// Variable pour savoir où nous en sommes dans la séquence
+byte indexSequence = 0;
+
+// Compteur de tentatives
+byte tentatives = 0;
+
+unsigned long lastBlockTime = 0; // Temps de début du blocage
+
+void setup() {
+  Serial.begin(9600); // Initialisation de la communication série
+  pinMode(LED_VERTE_PIN, OUTPUT); // Configurer la broche de la LED verte en sortie
+  pinMode(LED_ROUGE_PIN, OUTPUT); // Configurer la broche de la LED rouge en sortie
+  digitalWrite(LED_VERTE_PIN, LOW); // Assurez-vous que la LED verte est éteinte au départ
+  digitalWrite(LED_ROUGE_PIN, LOW); // Assurez-vous que la LED rouge est éteinte au départ
+}
+
+void loop() {
+  // Vérifiez si nous sommes en mode de blocage
+  if (tentatives >= 3 && millis() - lastBlockTime < 5000) {
+    // Si 3 tentatives incorrectes ont été faites et qu'on est dans les 5 secondes, bloquer l'accès
+    digitalWrite(LED_ROUGE_PIN, HIGH); // Allumer la LED rouge pour signaler le blocage
+    return; // Ne rien faire, bloquer toute interaction avec le clavier
+  }
+
+  // Si le délai de 5 secondes est passé, réinitialiser les tentatives
+  if (tentatives >= 3 && millis() - lastBlockTime >= 5000) {
+    tentatives = 0; // Réinitialiser le compteur de tentatives
+    digitalWrite(LED_ROUGE_PIN, LOW); // Éteindre la LED rouge
+  }
+
+  char toucheAppuyee = clavier.getKey(); // récupération de la touche pressée
+
+  if (toucheAppuyee) {
+    Serial.print("Touche appuyée: ");
+    Serial.println(toucheAppuyee);
+
+    // Ajout de la touche à la séquence
+    sequenceEntree[indexSequence] = toucheAppuyee;
+    indexSequence++;
+
+    // Si la séquence atteint 4 chiffres, on vérifie
+    if (indexSequence == 4) {
+      sequenceEntree[indexSequence] = '\0'; // Ajout du caractère de fin de chaîne
+      Serial.print("Séquence entrée: ");
+      Serial.println(sequenceEntree);
+
+      // Vérifier si la séquence correspond au code secret
+      if (strcmp(sequenceEntree, CODE_SECRET) == 0) { // strcmp compare les deux chaînes
+        Serial.println("Code secret correct !");
+        digitalWrite(LED_VERTE_PIN, HIGH); // Allumer la LED verte
+        delay(2000); // Attendre 2 secondes pour que l'utilisateur voie la LED allumée
+        digitalWrite(LED_VERTE_PIN, LOW); // Éteindre la LED verte
+        tentatives = 0; // Réinitialiser les tentatives après une entrée correcte
+      } else {
+        Serial.println("Code secret incorrect !");
+        digitalWrite(LED_VERTE_PIN, LOW); // Éteindre la LED verte
+        tentatives++; // Augmenter le compteur de tentatives échouées
+        if (tentatives >= 3) {
+          lastBlockTime = millis(); // Enregistrer le moment du début du blocage
+        }
+      }
+
+      // Réinitialiser la séquence pour une nouvelle entrée
+      indexSequence = 0;
+      sequenceEntree[0] = '\0'; // Réinitialiser la chaîne de caractères
+    }
+  }
+}
