@@ -1,0 +1,62 @@
+#include <Keypad.h>
+
+const byte LIGNES = 4; // quatre lignes
+const byte COLONNES = 4; // quatre colonnes
+char touches[LIGNES][COLONNES] = {
+  {'1','2','3','F'},
+  {'4','5','6','E'},
+  {'7','8','9','D'},
+  {'A','0','B','C'}
+};
+byte brochesLignes[LIGNES] = {5, 4, 3, 2}; // connectez aux broches des lignes du clavier
+byte brochesColonnes[COLONNES] = {9, 8, 7, 6}; // connectez aux broches des colonnes du clavier
+
+Keypad clavier = Keypad(makeKeymap(touches), brochesLignes, brochesColonnes, LIGNES, COLONNES);
+
+// Définir la broche de la LED verte
+const int LED_VERTE_PIN = 11;
+
+const char CODE_SECRET[] = "12"; // Code secret à 2 chiffres
+char sequenceEntree[3]; // Tableau pour stocker la séquence (3 car on commence par l'indice 0 pour les tableaux)
+
+// Variable pour savoir où nous en sommes dans la séquence
+byte indexSequence = 0;
+
+void setup(){
+  Serial.begin(9600); // initialisation de la communication série
+  pinMode(LED_VERTE_PIN, OUTPUT); // Configurer la broche de la LED verte en sortie
+  digitalWrite(LED_VERTE_PIN, LOW); // Assurez-vous que la LED est éteinte au départ
+}
+
+void loop(){
+  char toucheAppuyee = clavier.getKey(); // récupération de la touche pressée
+
+  if (toucheAppuyee) {
+    Serial.print("Touche appuyée: ");
+    Serial.println(toucheAppuyee);
+    
+    // Ajout de la touche à la séquence
+    sequenceEntree[indexSequence] = toucheAppuyee;
+    indexSequence++;
+
+    // Si la séquence atteint 2 chiffres, on vérifie
+    if (indexSequence == 2) {
+      sequenceEntree[indexSequence] = '\0'; // Ajout du caractère de fin de chaîne
+      Serial.print("Séquence entrée: ");
+      Serial.println(sequenceEntree);
+
+      // Vérifier si la séquence correspond au code secret
+      if (strcmp(sequenceEntree, CODE_SECRET) == 0) { // strcmp compare deux chaines deux caractères la qui sont la sequence d'entrée et mon code secret 
+        Serial.println("Code secret correct !");
+        digitalWrite(LED_VERTE_PIN, HIGH); // Allumer la LED verte
+      } else {
+        Serial.println("Code secret incorrect !");
+        digitalWrite(LED_VERTE_PIN, LOW); // Éteindre la LED verte
+      }
+
+      // Réinitialiser la séquence pour une nouvelle entrée
+      indexSequence = 0;
+      memset(sequenceEntree, 0, sizeof(sequenceEntree)); // Réinitialiser la séquence memset permet d'effacer le contenu du tableau
+    }
+  }
+}
