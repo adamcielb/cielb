@@ -1,31 +1,31 @@
 #include <Keypad.h>
 
-const byte ROWS = 4; // quatre lignes
-const byte COLS = 4; // quatre colonnes (modification ici)
-char keys[ROWS][COLS] = {
+const byte LIGNES = 4; // quatre lignes
+const byte COLONNES = 4; // quatre colonnes
+char touches[LIGNES][COLONNES] = {
   {'1','2','3','F'},
   {'4','5','6','E'},
   {'7','8','9','D'},
   {'A','0','B','C'}
 };
-byte rowPins[ROWS] = {5, 4, 3, 2}; // connectez aux broches des lignes du clavier
-byte colPins[COLS] = {9, 8, 7, 6}; // connectez aux broches des colonnes du clavier
+byte brochesLignes[LIGNES] = {5, 4, 3, 2}; // connectez aux broches des lignes du clavier
+byte brochesColonnes[COLONNES] = {9, 8, 7, 6}; // connectez aux broches des colonnes du clavier
 
-Keypad kpd = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+Keypad clavier = Keypad(makeKeymap(touches), brochesLignes, brochesColonnes, LIGNES, COLONNES);
 
 void setup(){
   Serial.begin(9600); // initialisation de la communication série
 }
 
 void loop(){
-  char key = kpd.getKey(); // récupération de la touche pressée
-  if (key) {
-    if (key == '4'){
+  char toucheAppuyee = clavier.getKey(); // récupération de la touche pressée
+  if (toucheAppuyee) {
+    if (toucheAppuyee == '4'){
       Serial.println("La touche 4 est pressée");
     }
     else {
       Serial.print("La touche ");
-      Serial.print(key);
+      Serial.print(toucheAppuyee);
       Serial.println(" est pressée");
     }
   }
